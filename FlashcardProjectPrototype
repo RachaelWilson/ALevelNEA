@@ -1,324 +1,112 @@
-import sqlite3
-import tkinter as tk 
-from tkinter import ttk
-from tkinter import messagebox
-from ttkbootstrap import Style
+import tkinter as tk
+import random
 
-# Create database tables if they don't exist
-def create_tables(conn):
-    cursor = conn.cursor()
+class Flashcard:
+    def __init__(self, question, answer): #In this class, I am defining the variables that are to be used throughout the project.
+        self.question = question
+        self.answer = answer
+        
+class FlashcardApplication: # Declaring what will be used in the FlashcardApplication window.
+    def __init__(self, root):
+        self.root = root # Tkinter root window
+        self.flashcards = [] # Dictionary to store flashcards
+        self.correct_answers = 0 # Counter for correct answers
+        self.incorrect_answers = 0 # Counter for incorrect answers
+        self.current_flashcard_index = 0 # Counter for current flashcards
+        self.users = {} # Dictionary to store user credentials
+        self.create_widgets() # To create widgets
 
-# Create flashcar_sets table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS flashcards_sets (
-                   id INTEGER PRIMARY KEY AUTOINCREMENT,
-                   name TEXT NOT NULL
-        )
-''')
-    
-# Create flashcards table with foreign key reference to flashcard_sets
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS flashcards (
-                   id INTEGER PRIMARY KEY AUTOINCREMENT,
-                   set_id INTEGER NOT NULL,
-                   question TEXT NOT NULL,
-                   answer TEXT NOT NULL,
-                   FOREIGN KEY (set_id) REFERENCES flashcard_sets(id)
-        )
-''')
-    
-# Add a new flashcard set to the database
-def add_set(conn, name):
-    cursor = conn.cursor()
+    def create_widgets(self): # Creation of login and register widgets
+        self.username_label = tk.Label(self.root, text="Please enter a username: ") #Username label and position
+        self.username_label.grid(row=0, column=0)
+        self.username_entry = tk.Entry(self.root) # Username entry and position
+        self.username_entry.grid(row=0, column=1)
 
-# Insert the set name into flashcard_sets (name)
-    cursor.execute('''
-        INSERT INTO flashcard_sets (name)
-        Values (?)
-''', (name))
-    
-    set_id = cursor.lastrowid
-    conn.commit()
+        self.password_label = tk.Label(self.root, text="Please enter a password: ") # Password label and position
+        self.password_label.grid(row=1, column=0)
+        self.password_entry = tk.Entry(self.root, show="*") # Password entry and position
+        self.password_entry.grid(row=1, column=1)
 
-    return set_id
+        self.register_button = tk.Button(self.root, text="Register here", command=self.user_registration) # Functionalising register button
+        self.register_button.grid(row=2, column=0)
 
-# Function to add a flashcard to the database
-def add_card(conn, set_id, question, answer):
-    cursor = conn.cursor()
+        self.login_button = tk.Button(self.root, text="Login Here", command=self.login) # Functionalising login button
+        self.login_button.grid(row=2, column=1)
 
-# Execute SQL query to insert a new flashcard into the database
-    cursor.execute('''
-        INSERT INTO flashcards (set_id, question, answer)
-        VALUES (?, ?, ?)
-    ''', (set_id, question, answer))
+    def user_registration(self): # Registering a new user, getting both username and password from entry.
+        username = self.username_entry.get()
+        password = self.password_entry.get()
+        if username in self.users:
+            print("Username already exists. Please choose a different username.") # Notify user if it already exists
+            return
+        self.users[username] = password
+        print("Account registered successfully!") # Notifying user of succesful login then closing window.
 
-# Get the ID of the newly inserted card
-    card_id = cursor.lastrowid
-    conn.commit()
-
-    return card_id
-
-# Function to retrieve all flashcard sets from the database
-def get_sets(conn):
-    cursor = conn.cursor()
-
-    # Execute SQL query to fetch all flashcard sets
-    cursor.execute('''
-        SELECT id, name FROM flashcard_sets
-    ''')
-
-    rows= cursor.fetchall()
-    sets= {row[1]: row[0] for row in rows} #Create a dictionary of sets (name: id)
-
-    return sets
-
-#Function to retrieve all flashcards of a specific set 
-def get_cards(conn, set_id):
-    cursor = conn.cursor()
-
-    cursor.execute('''
-        SELECT question, answer FROM flashcards
-        WHERE set_id = ?
-                   
-    ''', (set_id,))
-
-    rows = cursor.fetchall()
-    cards = [(row[0], row[1]) for row in rows] #Create a list of cards (question, answer)
-
-    return cards
-
-#Function to delete a flashcard set from the database
-def delete_set(conn, set_id):
-    cursor = conn.cursor()
-
-    #Execute SQL query to delete a flashcard set
-    cursor.execute('''
-        DELETE FROM flashcard_sets
-        WHERE id = ?
-    ''', (set_id,))
-
-    conn.commit()
-    sets_combobox.set('')
-    clear_flashcard_display()
-    populate_sets_combobox()
-
-    #Clear the current_cards list and reset card_index
-    global current_cards, card_index
-    current_cards = []
-    card_index = 0
-
-# Function to create new flashcard set
-def create_set():
-    set_name = set_name_var.get()
-    if set_name:
-        if set_name not in get_sets(conn):
-            set_id = add_set(conn, set_name)
-            populate_sets_combobox()
-            set_name_var.set('')
-
-            #Clear the input fields
-            set_name_var.set('')
-            question_var.set('')
-            answer_var.set('')
-
-def add_word():
-    set_name = set_name_var.get()
-    question = question_var.get()
-    answer = answer_var.get()
-
-    if set_name and question and answer:
-        if set_name not in get_sets(conn):
-            set_id = add_set(conn, set_name)
+    def login(self): #Registering new user, get username and password from entry
+        username = self.username_entry.get() 
+        password = self.password_entry.get()
+        if username in self.users and self.users[username] == password: 
+            print("Login successful!")
+            self.root.destroy()
+            self.create_flashcard_program()
         else:
-            set_id = get_sets(conn)[set_name]
-
-        add_card(conn, set_id, question, answer)
-
-        question_var.set('')
-        answer_var.set('')
-
-        populate_sets_combobox()
-
-def populate_sets_combobox():
-    sets_combobox['values'] = tuple(get_sets(conn).keys())
-
-#Function to delete a selected flashcard set
-def delete_selected_sets():
-    set_name = sets_combobox.get()
-
-    if set_name:
-        result = messagebox.askyesno(
-            'Confirmation', f'Are you sure you want to delete the "{set_name}" set?'
-        )
-
-        if result == tk.YES:
-            set_id = get_sets(conn)[set_name]
-            delete_set(conn, set_id)
-            populate_sets_combobox()
-            clear_flashcard_display()
-
-def select_set():
-    set_name = sets_combobox.get()
-
-    if set_name:
-        set_id = get_sets(conn)[set_name]
-        cards = get_cards(conn, set_id)
-
-        if cards:
-            display_flashcards(cards)
-        else:
-            question_label.config(text="No cards in this set")
-            answer_label.config(text='')
-    else:
-        #Clear the current cards list and rest card index
-        global current_cards, card_index
-        current_cards = []
-        card_index = 0
-        clear_flashcard_display()
-
-def display_flashcards(cards):
-    global card_index
-    global current_cards
+            print("Invalid username or password. Please re-enter information.") # Notify if username already exists
     
-    card_index - 0
-    current_cards = cards
-    
-    #Clear the display
-    if not cards:
-        clear_flashcard_display()
-    else:
-        show_card()
-    
-    show_card()
+    def create_flashcard_program(self): # Flashcard program window
+        flashcard_root = tk.Tk()
+        flashcard_root.title("Flashcard Application")
 
-def clear_flashcard_display():
-    question_label.config(text='')
-    answer_label.config(text='')
+        # Below I am creating the buttons for the front end of the application. AKA Widgets
+        self.add_flashcard_button = tk.Button(flashcard_root, text="Add Flashcard", command=self.add_flashcard)
+        self.add_flashcard_button.pack()
 
-#Fuction to display the current flashcards question
-def show_card():
-    global card_index
-    global current_cards
+        self.study_flashcards_button = tk.Button(flashcard_root, text="Study Flashcards", command=self.study_flashcards)
+        self.study_flashcards_button.pack()
 
-    if current_cards:
-        if 0 <= card_index < len(current_cards):
-            question, _ = current_cards[card_index]
-            question_label.config(text=question)
-            question_label.config(text='')
-        else:
-            clear_flashcard_display()
-    else:
-        clear_flashcard_display()
+        self.test_yourself_button = tk.Button(flashcard_root, text="Test", command=self.test_yourself)
+        self.test_yourself_button.pack()
 
-#Function to move to the next card
-def next_card():
-    global card_index
-    global current_cards
+        self.wrong_answers_button = tk.Button(flashcard_root, text="Wrong Answers", command=self.wrong_answers)
+        self.wrong_answers_button.pack()
 
-    if current_cards:
-        card_index = min(card_index + 1, len(current_cards) -1)
-        show_card()
+        self.your_score_button = tk.Button(flashcard_root, text="Score", command = self.your_score) # The command line ensures that the output can be seen in the terminal by the user.
+        self.your_score_button.pack()
 
-#Function to move to the previous card
-    def prev_card():
-        global card_index
-        global current_cards
+    def add_flashcard(self, question=None, answer=None):  #This will output a question to the terminal instructing the user to write a question for a flashcard.
+        if question is None:
+            question = input("Enter a question: ") # User enter question
+        if answer is None:
+            answer = input("Enter the answer: ") # User enter answer
+        flashcard = Flashcard(question, answer)
+        self.flashcards.append(flashcard)
 
-        if current_cards:
-            card_index = max(card_index - 1, 0)
-            show_card()
+    def study_flashcards(self): # Method to study flashcards
+        for flashcard in self.flashcards:
+            input(f"Question: {flashcard.question}\n Press to reveal answer")
+            print(f"Answer: {flashcard.answer}")
 
-#Function to flip the current card and display its answer
-def flip_card():
-    global card_index
-    global current_cards
+    def test_yourself(self): # Method to test user
+        random.shuffle(self.flashcards)
+        for flashcard in self.flashcards:
+            user_answer = input(f"Question: {flashcard.question}\n Your Answer: ")
+            if user_answer.lower() == flashcard.answer.lower():
+                print("That is correct!") # Notify of correct answer
+                self.correct_answers += 1 # Increment correct answer counter
 
-    if current_cards:
-        _, answer = current_cards[card_index]
-        answer_label.config(text=answer)
+    def wrong_answers(self): # Method to review wrong answers
+        if self.incorrect_answers == 0:
+            print("No incorrect answers detected.") # Notify if no incorrect answers are present
+            return
+        print("Incorrect answers detected.")
+        for flashcard in self.flashcards:
+            user_answer = input(f"Question: {flashcard.question}\n Correct Answer: {flashcard.answer}\n Press enter to continue on")
+        self.incorrect_answers = 0 # Reset incorrect answer counter after review
 
-if __name__ == '__main__':
-# Connect to the SQLite database and create tables
-    conn = sqlite3.connect('flashcards.db')
-    create_tables(conn)
+    def your_score(self): # Method to display user's score
+        print(f"Correct Answers: {self.correct_answers}")
+        print(f"Incorrect Answers: {self.incorrect_answers}")
 
-# Create the main GUI window
-    root = tk.Tk()
-    root.title('Flashcards App')
-    root.geometry('500x400')
-
-# Apply styling to the GUI elements
-    style = Style(theme='superhero')
-    style.configure('TLabel', font=('TkDefaultFont', 18))
-    style.configure('TButton', font=('TkDefaultFont', 16))
-
-# Set up variables for storing user input
-    set_name_var = tk.StringVar()
-    question_var = tk.StringVar()
-    answer_var = tk.StringVar()
-
-# Create a notebook widget to manage tabs
-    notebook = ttk.Notebook(root)
-    notebook.pack(fill='both', expand=True)
-
-# Create the "Create Set" tab and its content
-    create_set_frame = ttk.Frame(notebook)
-    notebook.add(create_set_frame, text="Create Set")
-
-# Label and Entry widgets for entering set name, word and definition
-    ttk.Label(create_set_frame, text='Set Name:').pack(padx=5, pady=5)
-    ttk.Entry(create_set_frame, textvariable=set_name_var, width=30). pack(padx=5, pady=5)
-
-    ttk.Label(create_set_frame, text='Question:').pack(padx=5, pady=5)
-    ttk.Entry(create_set_frame, textvariable=question_var, width=30). pack(padx=5, pady=5)
-
-
-    ttk.Label(create_set_frame, text='Answer:').pack(padx=5, pady=5)
-    ttk.Entry(create_set_frame, textvariable=answer_var, width=30). pack(padx=5, pady=5)
-
-# Button to add a question to the set (command= add_question) => for the next part
-    ttk.Button(create_set_frame, text='Add Question').pack(padx=5, pady=10)
-
-# Button the save the set (command=creat_set)
-    ttk.Button(create_set_frame, text='Save Set').pack(padx=5, pady=10)
-
-# Create the "Select Set" tab and its content
-    select_set_frame = ttk.Frame(notebook)
-    notebook.add(select_set_frame, text="Select Set")
-
-# Combobox widget for selecting existing flashcard sets
-    sets_combobox = ttk.Combobox(select_set_frame, state='readonly')
-    sets_combobox.pack(padx=5, pady=40)
-
-# Button to select a set (command=select_set)
-    ttk.Button(select_set_frame, text='Select Set').pack(padx=5, pady=5)
-
-# Button to delete a set (command=delete_selected_set)
-    ttk.Button(select_set_frame, text='Delete Set').pack(padx=5, pady=5)
-
-# Create the "Learn" tab and its content
-    flashcards_frame = ttk.Frame(notebook)
-    notebook.add(flashcards_frame, text='Learn')
-
-# Initialise variables for tracking card index and current cards
-    card_index = 0
-    curent_tabs= []
-
-# Label to display the Question on flashcards
-    question_label = ttk.Label(flashcards_frame, text='', font=('TkDefaultFont', 24))
-    question_label.pack(padx=5 , pady=40)
-
-# Label to display the Answer on flashcards
-    answer_label = ttk.Label(flashcards_frame, text='')
-    answer_label.pack(padx=5, pady=5)
-
-# Button to flip the flashcard (command=flip_card)
-    ttk.Button(flashcards_frame, text='Flip').pack(side='left', padx=5, pady=5)
-
-# Button to view the next flashcard (command=next_card)
-    ttk.Button(flashcards_frame, text='Next').pack(side='right', padx=5, pady=5)
-
-# Button to view the previous flashcard (command=prev_card)
-    ttk.Button(flashcards_frame, text='Previous').pack(side='right', padx=5, pady=5)
-
-    root.mainloop()
+root = tk.Tk() # Create Tkinter root window
+app = FlashcardApplication(root) #To run application
+root.configure(bg="#CDEBC5") # Used geometry to choose the sizing of my window and configure to add a background colour.
+root.mainloop() # Start main event loop 
