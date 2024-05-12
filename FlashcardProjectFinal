@@ -1,142 +1,112 @@
 import tkinter as tk
 import random
-import uuid
 
 class Flashcard:
-    def __init__(self, question, answer):
-        # Flashcard class representing a single flashcard.
-        self.id = uuid.uuid4() # Unique identifier for the flashcard
-        self.question = question # Question on the flashcard
-        self.answer = answer # Answer to the question
-
-class FlashcardProgram:
+    def __init__(self, question, answer): #In this class, I am defining the variables that are to be used throughout the project.
+        self.question = question
+        self.answer = answer
+        
+class FlashcardApplication: # Declaring what will be used in the FlashcardApplication window.
     def __init__(self, root):
-        # FlashcardProgram class representing the main flashcard program.
-        self.root = root # Tkinter root window
-        self.flashcards = {} # Dictionary to store flashcards
-        self.correct_answers = 0 # Counter for correct answers
-        self.incorrect_answers = 0 # Counter for incorrect answers
-        self.users = {} # Dictionary to store user credentials
-        self.create_widgets() # Create login, register widgets
+        self.root = root
+        self.flashcards = []
+        self.correct_answers = 0
+        self.incorrect_answers = 0
+        self.current_flashcard_index = 0
+        self.users = {}
+        self.create_widgets()
 
     def create_widgets(self):
-        # Method to create loginregister widgets.
-        self.username_label = tk.Label(self.root, text="Username:") # Label for username
-        self.username_label.grid(row=0, column=0) # Position username label
-        self.username_entry = tk.Entry(self.root) # Entry widget for username
-        self.username_entry.grid(row=0, column=1) # Position username entry
-        
-        self.password_label = tk.Label(self.root, text="Password:") # Label for password
-        self.password_label.grid(row=1, column=0) # Position password label
-        self.password_entry = tk.Entry(self.root, show="*") # Entry widget for password
-        self.password_entry.grid(row=1, column=1) # Position password entry
+        self.username_label = tk.Label(self.root, text="Please enter a username: ")
+        self.username_label.grid(row=0, column=0)
+        self.username_entry = tk.Entry(self.root)
+        self.username_entry.grid(row=0, column=1)
 
-        self.register_button = tk.Button(self.root, text="Register", command=self.register_user) # Register button
-        self.register_button.grid(row=2, column=0) # Position register button
+        self.password_label = tk.Label(self.root, text="Please enter a password: ")
+        self.password_label.grid(row=1, column=0)
+        self.password_entry = tk.Entry(self.root, show="*")
+        self.password_entry.grid(row=1, column=1)
 
-        self.login_button = tk.Button(self.root, text="Login", command=self.login) # Login button 
-        self.login_button.grid(row=2, column=1) # Position login button
+        self.register_button = tk.Button(self.root, text="Register here", command=self.user_registration)
+        self.register_button.grid(row=2, column=0)
 
-    def register_user(self):
-        # Method to register a new user
-        username = self.username_entry.get() # Get username from entry
-        password = self.password_entry.get() # Get password from entry
+        self.login_button = tk.Button(self.root, text="Login Here", command=self.login)
+        self.login_button.grid(row=2, column=1)
+
+    def user_registration(self):
+        username = self.username_entry.get()
+        password = self.password_entry.get()
         if username in self.users:
-            print("Username already exists. Please choose another one.") # Notify if username already exists
+            print("Username already exists. Please choose a different username.")
             return
-        self.users[username] = password # Store username and password
-        print("User registered successfully!") # Notify successful registration
+        self.users[username] = password
+        print("Account registered successfully!")
 
     def login(self):
-        # Method to authenitcate user login.
-        username = self.username_entry.get() # Get username from entry
-        password = self.password_entry.get() # Get password from entry
+        username = self.username_entry.get()
+        password = self.password_entry.get()
         if username in self.users and self.users[username] == password:
-            print("Login successful!") # Notify successful login
-            self.root.destroy() # Close login window
-            self.create_flashcard_program() # Create flashcard program window
+            print("Login successful!")
+            self.root.destroy()
+            self.create_flashcard_program()
         else:
-            print("Invalid username or password. Please try again.") # Notify invalid credentials
-
+            print("Invalid username or password. Please re-enter information.")
+    
     def create_flashcard_program(self):
-        # Method to create main flashcard program window.
-        flashcard_root = tk.Tk() # Create Tkinter window for flashcard program
-        flashcard_root.title("Flashcard Program") # Set window title
-        
-        flashcard_frame = tk.Frame(flashcard_root) # Frame for flashcard program widgets
-        flashcard_frame.pack(padx=10, pady=10) # Pack frame with padding
+        flashcard_root = tk.Tk()
+        flashcard_root.title("Flashcard Application")
 
-        create_flashcard_button = tk.Button(flashcard_frame, text="Create Flashcard", command=self.create_flashcard) # Button to create flashcard
-        create_flashcard_button.grid(row=0, column=0, padx=5, pady=5) # Position create flashcard button
-        
-        study_flashcard_button = tk.Button(flashcard_frame, text="Study Flashcards", command=self.study_flashcards) # Button to study flashcards
-        study_flashcard_button.grid(row=0, column=1, padx=5, pady=5) # Position study flashcards button
+        # Below I am creating the buttons for the front end of the application. AKA Widgets
+        self.add_flashcard_button = tk.Button(flashcard_root, text="Add Flashcard", command=self.add_flashcard)
+        self.add_flashcard_button.pack()
 
-        quiz_flashcard_button = tk.Button(flashcard_frame, text="Quiz Yourself", command=self.quiz_flashcards) # Button to quiz flashcards
-        quiz_flashcard_button.grid(row=0, column=2, padx=5, pady=5) # Position quiz flashcards button
+        self.study_flashcards_button = tk.Button(flashcard_root, text="Study Flashcards", command=self.study_flashcards)
+        self.study_flashcards_button.pack()
 
-        review_incorrect_button = tk.Button(flashcard_frame, text="Review Incorrect Answers", command=self.review_incorrect_answers) # Button to review incorrect answers
-        review_incorrect_button.grid(row=1, column=0, columnspan=2, padx=5, pady=5) # Position review incorrect answers button
+        self.test_yourself_button = tk.Button(flashcard_root, text="Test", command=self.test_yourself)
+        self.test_yourself_button.pack()
 
-        display_score_button = tk.Button(flashcard_frame, text="Display Score", command=self.display_score) # Button to display score
-        display_score_button.grid(row=1, column=2, padx=5, pady=5) # Position display score button
+        self.wrong_answers_button = tk.Button(flashcard_root, text="Wrong Answers", command=self.wrong_answers)
+        self.wrong_answers_button.pack()
 
-        flashcard_root.mainloop() # Start main event loop
+        self.your_score_button = tk.Button(flashcard_root, text="Score", command = self.your_score) # The command line ensures that the output can be seen in the terminal by the user.
+        self.your_score_button.pack()
 
-    def create_flashcard(self):
-        # Method to create a new flashcard.
-        question = input("Enter the question: ") # Prompt user to enter question
-        answer = input("Enter the answer: ") # Prompt user to enter answer
-        flashcard = Flashcard(question, answer) # Create flashcard object
-        self.flashcards[flashcard.id] = flashcard # Store flashcard in dictionary
-        print("Flashcard created successfully!") # Notify successful flashcard creation
+    def add_flashcard(self, question=None, answer=None):  #This will output a question to the terminal instructing the user to write a question for a flashcard.
+        if question is None:
+            question = input("Enter a question: ")
+        if answer is None:
+            answer = input("Enter the answer: ")
+        flashcard = Flashcard(question, answer)
+        self.flashcards.append(flashcard)
 
     def study_flashcards(self):
-        # Method to study flashcards
-        if not self.flashcards:
-            print("No flashcards available to study.") # Notify if no flashcards available 
-            return
-        flashcard_ids = list(self.flashcards.keys()) # Get list of flashcards IDs
-        random.shuffle(flashcard_ids) # Shuffle flashcard IDs
-        for flashcard_id in flashcard_ids:
-            flashcard = self.flashcards[flashcard_id] # Retrieve flashcard object
-            input(f"Question: {flashcard.question}\nPress Enter to reveal the answer...")
-            print(f"Answer: {flashcard.answer}") #Display flashcard answer
+        for flashcard in self.flashcards:
+            input(f"Question: {flashcard.question}\n Press to reveal answer")
+            print(f"Answer: {flashcard.answer}")
 
-    def quiz_flashcards(self):
-        # Method to quiz user on flashcards.
-        if not self.flashcards:
-            print("No flashcards available to quiz.") # Notify if flashcards available
-            return
-        flashcard_ids = list(self.flashcards.keys()) # Get list of flashcard IDs
-        random.shuffle(flashcard_ids) # Shuffle flashcard IDs
-        for flashcard_id in flashcard_ids:
-            flashcard = self.flashcards[flashcard_id] # Retrieve flashcard object
-            user_answer = input(f"Question: {flashcard.question}\nYour Answer: ") 
+    def test_yourself(self):
+        random.shuffle(self.flashcards)
+        for flashcard in self.flashcards:
+            user_answer = input(f"Question: {flashcard.question}\n Your Answer: ")
             if user_answer.lower() == flashcard.answer.lower():
-                print("Correct!") # Notify correct answer
-                self.correct_answers += 1 # Increment correct answer counter
-            else:
-                print("Incorrect!")
-                self.incorrect_answers += 1
+                print("That is correct!")
+                self.correct_answers += 1
 
-    def review_incorrect_answers(self):
-        # Method to review incorrect answers.
+    def wrong_answers(self):
         if self.incorrect_answers == 0:
-            print("You have no incorrect answers to review.") # Notify if no incorrect answers
+            print("No incorrect answers detected.")
             return
-        print("Incorrect Answers:")
-        for flashcard in self.flashcards.values():
-            user_answer = input(f"Question: {flashcard.question}\nCorrect Answer: {flashcard.answer}\nPress Enter to continue...")
-        self.incorrect_answers = 0 # Reset incorrect answer counter after review
+        print("Incorrect answers detected.")
+        for flashcard in self.flashcards:
+            user_answer = input(f"Question: {flashcard.question}\n Correct Answer: {flashcard.answer}\n Press enter to continue on")
+        self.incorrect_answers = 0
 
-    def display_score(self):
-        # Method to display user's score.
-        print(f"Correct Answers: {self.correct_answers}") # Display correct answer count
-        print(f"Incorrect Answers: {self.incorrect_answers}") # Display incorrect answer count
+    def your_score(self):
+        print(f"Correct Answers: {self.correct_answers}")
+        print(f"Incorrect Answers: {self.incorrect_answers}")
 
-if __name__ == "__main__":
-    root = tk.Tk() # Create Tkinter root window
-    root.title("Flashcard Program Login") # Set window title
-    app = FlashcardProgram(root) # Create FlashcardProgram instance
-    root.mainloop() # Start main event loop
+root = tk.Tk()
+app = FlashcardApplication(root) #To run application
+root.configure(bg="#CDEBC5") # Used geometry to choose the sizing of my window and configure to add a background colour.
+root.mainloop()
